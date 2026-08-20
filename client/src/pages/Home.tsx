@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ExternalLink, HeartHandshake, Landmark, PiggyBank, Plane, RefreshCcw, Sparkles, Users, WalletCards } from "lucide-react";
+import { ExternalLink, Landmark, PiggyBank, Plane, RefreshCcw, Sparkles, Users, WalletCards } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -89,7 +89,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#f7f3ea] text-[#302622]">
       <header className="border-b border-[#e5dbc6] bg-[#fffdf8] px-3 py-3 sm:px-4 sm:py-4 lg:px-8">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 sm:gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#5a2435] text-[#f6dfa5] sm:h-10 sm:w-10"><HeartHandshake size={18} /></div><div><p className="hidden text-[10px] font-bold uppercase tracking-[0.18em] text-[#8b745b] sm:block">Shared celebration plan</p><h1 className="font-serif text-xl font-bold tracking-tight text-[#5a2435] sm:text-2xl">Kyia + Keilen</h1></div></div>
+          <div className="flex items-center gap-2.5 sm:gap-3"><WeddingMonogram /><div><p className="hidden text-[10px] font-bold uppercase tracking-[0.18em] text-[#8b745b] sm:block">Shared celebration plan</p><h1 className="font-serif text-xl font-bold tracking-tight text-[#5a2435] sm:text-2xl">Kyia + Keilen</h1></div></div>
           <Badge className="shrink-0 border border-[#cbb47a] bg-[#fbf2d7] px-2.5 py-1.5 text-xs text-[#725522] hover:bg-[#fbf2d7] sm:px-3"><Sparkles className="mr-1 h-3.5 w-3.5 sm:mr-1.5" /><span className="hidden sm:inline">Private link planner</span><span className="sm:hidden">Planner</span></Badge>
         </div>
       </header>
@@ -154,4 +154,8 @@ function TrackerTable({ items, onSave, totalPlanned, totalSpent, isHoneymoon = f
 
 function RollupView({ rows, totalPlanned, totalSpent }: { rows: Array<{ name: string; planned: number; spent: number; remaining: number; share: number }>; totalPlanned: number; totalSpent: number }) {
   return <div className="panel overflow-hidden"><div className="panel-heading"><div><p className="eyebrow">Live rollup</p><h3 className="font-serif text-2xl font-bold text-[#5a2435]">Major categories</h3></div><p className="text-sm text-[#675e54]">Driven by the detailed tracker</p></div><div className="space-y-2 p-3 md:hidden">{rows.map(row => <article className="rounded-lg border border-[#ece2d0] bg-[#fffdf8] p-3" key={row.name}><div className="flex justify-between gap-3"><strong className="text-sm text-[#4b2632]">{row.name}</strong><span className="shrink-0 text-sm font-bold text-[#6e4b15]">{(row.share * 100).toFixed(1)}%</span></div><div className="mt-2 grid grid-cols-3 gap-2 text-xs"><div><p className="text-[#675e54]">Planned</p><strong>{toCurrency(row.planned)}</strong></div><div><p className="text-[#675e54]">Spent</p><strong>{toCurrency(row.spent)}</strong></div><div><p className="text-[#675e54]">Remaining</p><strong>{toCurrency(row.remaining)}</strong></div></div></article>)}<div className="rounded-lg bg-[#f8f0df] p-3 text-sm font-bold text-[#5a2435]">Total planned: {toCurrency(totalPlanned)} · Total spent: {toCurrency(totalSpent)}</div></div><div className="hidden overflow-x-auto md:block"><table className="budget-table min-w-[740px]"><thead><tr><th>Major category</th><th>Planned</th><th>Spent</th><th>Remaining</th><th>Share</th></tr></thead><tbody>{rows.map(row => <tr key={row.name}><td className="font-semibold text-[#4b2632]">{row.name}</td><td>{toCurrency(row.planned)}</td><td>{toCurrency(row.spent)}</td><td>{toCurrency(row.remaining)}</td><td>{(row.share * 100).toFixed(1)}%</td></tr>)}</tbody><tfoot><tr><td>Total</td><td>{toCurrency(totalPlanned)}</td><td>{toCurrency(totalSpent)}</td><td>{toCurrency(totalPlanned - totalSpent)}</td><td>100.0%</td></tr></tfoot></table></div></div>;
+}
+
+function WeddingMonogram() {
+  return <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#5a2435] shadow-[inset_0_0_0_1px_rgba(246,223,165,0.5),0_3px_10px_rgba(90,36,53,0.16)] sm:h-12 sm:w-12" role="img" aria-label="Kyia and Keilen interlocking K monogram"><svg viewBox="0 0 64 64" aria-hidden="true" className="h-full w-full"><circle cx="32" cy="32" r="26" fill="none" stroke="#e7c972" strokeWidth="1.2" opacity="0.9" /><path d="M17 32c5-3 8-8 9-14M17 32c5 3 8 8 9 14M47 32c-5-3-8-8-9-14M47 32c-5 3-8 8-9 14" fill="none" stroke="#e7c972" strokeLinecap="round" strokeWidth="1.25" /><text x="27" y="43" fill="#f7e8bc" fontFamily="Georgia, serif" fontSize="34" fontWeight="700" textAnchor="middle">K</text><text x="39" y="43" fill="#e7c972" fontFamily="Georgia, serif" fontSize="34" fontWeight="700" opacity="0.92" textAnchor="middle">K</text><circle cx="32" cy="13" r="1.35" fill="#f7e8bc" /><circle cx="32" cy="51" r="1.35" fill="#f7e8bc" /></svg></div>;
 }

@@ -17,3 +17,5 @@
 - [x] Add automated tests for planner save mutations, both restore mutations, and public private-link access without a signed-in user.
 - [x] Improve the dashboard, navigation, input controls, tracker tables, and chart presentation for touch-based mobile use.
 - [x] Validate the published planner at a mobile viewport and save an updated release checkpoint.
+- [x] Create and integrate a scalable Kyia + Keilen monogram in the responsive planner header.
+- [x] Verify the header monogram at desktop and mobile widths and save an updated release checkpoint.
