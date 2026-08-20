@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { daysUntilDate } from "@shared/countdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ExternalLink, Landmark, PiggyBank, Plane, RefreshCcw, Sparkles, Users, WalletCards } from "lucide-react";
+import { CalendarDays, ExternalLink, Landmark, PiggyBank, Plane, RefreshCcw, Sparkles, Users, WalletCards } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -71,7 +72,7 @@ export default function Home() {
     const weddingTotal = data.settings.venueCostPaidCents + weddingPlanned;
     const variance = data.settings.weddingBudgetCents - weddingTotal;
     const scenarios = [80, 100, 125, 150, 175].map(guests => ({ guests, wedding: weddingTotal / guests / 100, combined: (weddingTotal + data.settings.honeymoonBudgetCents) / guests / 100 }));
-    return { weddingItems, honeymoonItems, weddingPlanned, weddingSpent, honeymoonPlanned, honeymoonSpent, rollup, weddingTotal, variance, scenarios };
+    return { weddingItems, honeymoonItems, weddingPlanned, weddingSpent, honeymoonPlanned, honeymoonSpent, rollup, weddingTotal, variance, scenarios, countdownDays: daysUntilDate(data.settings.weddingDate) };
   }, [data]);
 
   if (plannerQuery.isLoading || !data || !calculations) {
@@ -79,7 +80,7 @@ export default function Home() {
   }
 
   const { settings } = data;
-  const { weddingItems, honeymoonItems, weddingPlanned, weddingSpent, honeymoonPlanned, honeymoonSpent, rollup, weddingTotal, variance, scenarios } = calculations;
+  const { weddingItems, honeymoonItems, weddingPlanned, weddingSpent, honeymoonPlanned, honeymoonSpent, rollup, weddingTotal, variance, scenarios, countdownDays } = calculations;
   const perGuest = settings.guestCount ? weddingTotal / settings.guestCount : 0;
   const combinedPerGuest = settings.guestCount ? (weddingTotal + settings.honeymoonBudgetCents) / settings.guestCount : 0;
   const saveSettings = (key: keyof typeof settings, value: number | string) => updateSettings.mutate({ ...settings, [key]: value, venueName: "Cottonwood Barn" });
@@ -102,7 +103,7 @@ export default function Home() {
 
         <main className="min-w-0 space-y-6 px-3 py-4 sm:space-y-7 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
           <section id="overview" className="scroll-mt-6">
-            <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><p className="eyebrow">Wedding planner</p><h2 className="font-serif text-2xl font-bold text-[#5a2435] sm:text-3xl">Your plan at a glance</h2><p className="mt-1 text-sm text-[#675e54]">Every figure below is saved to your shared planner.</p></div><div className="rounded-lg border border-[#d9c69b] bg-[#fffaf0] px-3 py-2 text-sm text-[#5f513d]"><strong>{settings.guestCount}</strong> guests • {settings.venueCapacity} venue capacity</div></div>
+            <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><p className="eyebrow">Wedding planner</p><h2 className="font-serif text-2xl font-bold text-[#5a2435] sm:text-3xl">Your plan at a glance</h2><p className="mt-1 text-sm text-[#675e54]">Every figure below is saved to your shared planner.</p></div><div className="flex flex-col gap-2 sm:items-end"><CountdownCard days={countdownDays} weddingDate={settings.weddingDate} /><div className="rounded-lg border border-[#d9c69b] bg-[#fffaf0] px-3 py-2 text-sm text-[#5f513d]"><strong>{settings.guestCount}</strong> guests • {settings.venueCapacity} venue capacity</div></div></div>
             <div className="mb-4 rounded-xl border border-[#d6c39a] bg-[#fff9e9] p-3 lg:hidden"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#80622b]">Venue</p><p className="mt-1 font-serif text-lg font-bold text-[#5a2435]">Cottonwood Barn</p><p className="mt-1 text-sm text-[#675e54]">Paris, Texas · July 11, 2027</p></div>
 
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -166,4 +167,10 @@ function WeddingMonogram() {
 
 function MonogramDivider() {
   return <div className="flex items-center gap-3 py-1 sm:gap-4 sm:py-2" aria-hidden="true"><div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#d9c69b] to-[#e8dfce]" /><div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#d7bb72] bg-[#fff9e9] shadow-sm"><svg viewBox="0 0 48 48" className="h-5 w-5"><text x="20" y="32" fill="#5a2435" fontFamily="Georgia, serif" fontSize="23" fontWeight="700" textAnchor="middle">K</text><text x="29" y="32" fill="#9b7637" fontFamily="Georgia, serif" fontSize="23" fontWeight="700" textAnchor="middle">K</text><circle cx="24" cy="8" r="1" fill="#9b7637" /><circle cx="24" cy="40" r="1" fill="#9b7637" /></svg></div><div className="h-px flex-1 bg-gradient-to-l from-transparent via-[#d9c69b] to-[#e8dfce]" /></div>;
+}
+
+function CountdownCard({ days, weddingDate }: { days: number; weddingDate: string }) {
+  const weddingDateLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(`${weddingDate}T12:00:00`));
+  const message = days === 0 ? "Your wedding day is here" : `${days === 1 ? "1 day" : `${days} days`} to go`;
+  return <div className="flex items-center justify-between gap-3 rounded-xl border border-[#7f3d50] bg-[#5a2435] px-3 py-2.5 text-[#fff8e8] shadow-sm sm:min-w-[206px]"><div className="flex items-center gap-2"><div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#e7c972]/70"><CalendarDays size={14} className="text-[#f7e8bc]" /></div><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#f7e8bc]">Wedding countdown</p><p className="mt-0.5 text-xs text-[#f5e9dc]">{weddingDateLabel}</p></div></div><strong className="font-serif text-lg leading-none">{message}</strong></div>;
 }
