@@ -15,3 +15,5 @@
 - [x] Save a final checkpoint and provide instructions for publishing the private app link.
 - [x] Remove the OAuth sign-in requirement and implement the planner as a shared private-link experience without a login screen.
 - [x] Add automated tests for planner save mutations, both restore mutations, and public private-link access without a signed-in user.
+- [x] Improve the dashboard, navigation, input controls, tracker tables, and chart presentation for touch-based mobile use.
+- [x] Validate the published planner at a mobile viewport and save an updated release checkpoint.

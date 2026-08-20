@@ -13,7 +13,7 @@
 
 .font-serif { font-family: Georgia, "Times New Roman", serif; }
 .eyebrow { color: #88713d; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
-.nav-link { display: flex; align-items: center; gap: 0.65rem; border-radius: 0.7rem; padding: 0.7rem 0.8rem; color: #5a2435; font-size: 0.88rem; font-weight: 700; transition: background-color 160ms ease-out, transform 160ms ease-out; white-space: nowrap; }
+.nav-link { display: flex; min-height: 2.75rem; align-items: center; gap: 0.55rem; border-radius: 0.7rem; padding: 0.65rem 0.75rem; color: #5a2435; font-size: 0.82rem; font-weight: 700; transition: background-color 160ms ease-out, transform 160ms ease-out; white-space: nowrap; }
 .nav-link:hover { background: #fffaf0; transform: translateX(2px); }
 .panel { border: 1px solid #e5dbc6; border-radius: 1rem; background: #fffdf8; box-shadow: 0 10px 30px rgba(90, 36, 53, 0.05); }
 .panel-heading { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 0.8rem; border-bottom: 1px solid #eee5d5; padding: 1.25rem 1.25rem 1rem; }
@@ -24,5 +24,7 @@
 .metric-card span { display: block; margin-top: 0.65rem; font-size: 0.73rem; }
 .metric-burgundy { background: #5a2435; color: #fff7e7; }.metric-gold { background: #f7e8bc; color: #644714; }.metric-sage { background: #e5eddf; color: #3f5437; }.metric-cream { background: #fffdf8; color: #5a2435; border: 1px solid #e4d8bc; }
 .budget-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }.budget-table th { background: #5a2435; padding: 0.8rem 1rem; text-align: left; color: #fff8e8; font-size: 0.67rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }.budget-table td { border-top: 1px solid #eee6d7; padding: 0.75rem 1rem; vertical-align: middle; }.budget-table tfoot td { background: #f8f0df; color: #5a2435; font-weight: 800; }.current-scenario td { background: #fbf0d3; font-weight: 700; }.deal-link { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid #9bb28f; border-radius: 0.6rem; background: #fffdf8; padding: 0.55rem 0.7rem; color: #45603b; font-size: 0.78rem; font-weight: 800; transition: transform 160ms ease-out, background-color 160ms ease-out; }.deal-link:hover { background: #eaf1e5; transform: translateY(-1px); }
+@media (min-width: 640px) { .nav-link { gap: 0.65rem; padding: 0.7rem 0.8rem; font-size: 0.88rem; } }
+@media (max-width: 639px) { .panel { border-radius: 0.9rem; } .panel-heading { padding: 1rem; } .metric-card { min-height: 0; padding: 1rem; } .metric-card strong { font-size: 1.5rem; } .metric-card span { margin-top: 0.45rem; } }
 button:active, .deal-link:active { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
