@@ -1,11 +1,44 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import { ALL_STARTER_ITEMS, HONEYMOON_STARTER_ITEMS, STARTER_SETTINGS, WEDDING_STARTER_ITEMS } from "../shared/plannerDefaults";
+import { InsertUser, plannerItems, plannerSettings, users } from "../drizzle/schema";
+import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
+const WEDDING_RESTORE_VALUES: Record<string, number> = {
+  photographer: 135000,
+  attire: 90000,
+  beauty: 20000,
+  "catering-staff": 85000,
+  alcohol: 55000,
+  hospitality: 25000,
+  "food-hospitality-buffer": 20000,
+  flowers: 50000,
+  decor: 65000,
+  signage: 25000,
+  bartender: 30000,
+  security: 30000,
+  "dj-buffer": 20000,
+  invitations: 20000,
+  programs: 5000,
+  "guest-extras": 5000,
+  cake: 30000,
+  desserts: 5000,
+  license: 10000,
+  tips: 40000,
+  "last-minute-reserve": 59656,
+};
+
+const HONEYMOON_RESTORE_VALUES: Record<string, number> = {
+  flights: 160000,
+  accommodations: 150000,
+  dining: 75000,
+  activities: 50000,
+  "local-transit": 25000,
+  "travel-protection": 40000,
+};
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -19,74 +52,74 @@ export async function getDb() {
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
-  }
-
+  if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
-
-  try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
-    const updateSet: Record<string, unknown> = {};
-
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
-
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
-
-    textFields.forEach(assignNullable);
-
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
+  if (!db) return;
+  const values: InsertUser = { openId: user.openId };
+  const updateSet: Record<string, unknown> = {};
+  (['name', 'email', 'loginMethod'] as const).forEach(field => {
+    if (user[field] !== undefined) {
+      values[field] = user[field] ?? null;
+      updateSet[field] = user[field] ?? null;
     }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
-  } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
-    throw error;
-  }
+  });
+  values.role = user.role ?? (user.openId === ENV.ownerOpenId ? 'admin' : 'user');
+  updateSet.role = values.role;
+  values.lastSignedIn = user.lastSignedIn ?? new Date();
+  updateSet.lastSignedIn = values.lastSignedIn;
+  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
-
+  if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
-  return result.length > 0 ? result[0] : undefined;
+  return result[0];
 }
 
-// TODO: add feature queries here as your schema grows.
+async function requirePlannerDb() {
+  const db = await getDb();
+  if (!db) throw new Error("Planner database is unavailable");
+  return db;
+}
+
+export async function getPlannerState() {
+  const db = await requirePlannerDb();
+  let settings = (await db.select().from(plannerSettings).where(eq(plannerSettings.id, 1)).limit(1))[0];
+  if (!settings) {
+    await db.insert(plannerSettings).values({ id: 1, ...STARTER_SETTINGS });
+    settings = (await db.select().from(plannerSettings).where(eq(plannerSettings.id, 1)).limit(1))[0]!;
+  }
+  let items = await db.select().from(plannerItems).orderBy(asc(plannerItems.tracker), asc(plannerItems.sortOrder));
+  if (items.length === 0) {
+    await db.insert(plannerItems).values(ALL_STARTER_ITEMS);
+    items = await db.select().from(plannerItems).orderBy(asc(plannerItems.tracker), asc(plannerItems.sortOrder));
+  }
+  return { settings, items };
+}
+
+export async function updatePlannerSettings(input: typeof STARTER_SETTINGS) {
+  const db = await requirePlannerDb();
+  await getPlannerState();
+  await db.update(plannerSettings).set(input).where(eq(plannerSettings.id, 1));
+  return getPlannerState();
+}
+
+export async function updatePlannerItem(id: string, plannedCents: number, spentCents: number) {
+  const db = await requirePlannerDb();
+  await getPlannerState();
+  await db.update(plannerItems).set({ plannedCents, spentCents }).where(eq(plannerItems.id, id));
+  return getPlannerState();
+}
+
+async function restoreItems(items: Record<string, number>) {
+  const db = await requirePlannerDb();
+  await getPlannerState();
+  for (const [id, plannedCents] of Object.entries(items)) {
+    await db.update(plannerItems).set({ plannedCents, spentCents: 0 }).where(eq(plannerItems.id, id));
+  }
+  return getPlannerState();
+}
+
+export async function restoreWeddingPlan() { return restoreItems(WEDDING_RESTORE_VALUES); }
+export async function restoreHoneymoonPlan() { return restoreItems(HONEYMOON_RESTORE_VALUES); }

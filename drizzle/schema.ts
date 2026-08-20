@@ -1,17 +1,7 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
@@ -22,7 +12,30 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
+export const plannerSettings = mysqlTable("planner_settings", {
+  id: int("id").primaryKey(),
+  weddingDate: varchar("weddingDate", { length: 10 }).notNull(),
+  guestCount: int("guestCount").notNull(),
+  weddingBudgetCents: int("weddingBudgetCents").notNull(),
+  honeymoonBudgetCents: int("honeymoonBudgetCents").notNull(),
+  venueCostPaidCents: int("venueCostPaidCents").notNull(),
+  venueName: varchar("venueName", { length: 128 }).notNull(),
+  venueCapacity: int("venueCapacity").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const plannerItems = mysqlTable("planner_items", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  tracker: mysqlEnum("tracker", ["wedding", "honeymoon"]).notNull(),
+  majorCategory: varchar("majorCategory", { length: 128 }).notNull(),
+  label: varchar("label", { length: 128 }).notNull(),
+  plannedCents: int("plannedCents").notNull(),
+  spentCents: int("spentCents").notNull(),
+  sortOrder: int("sortOrder").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
-
-// TODO: Add your tables here
+export type PlannerSettings = typeof plannerSettings.$inferSelect;
+export type PlannerItem = typeof plannerItems.$inferSelect;
