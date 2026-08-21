@@ -23,3 +23,5 @@
 - [x] Verify the monogram dividers at desktop and mobile widths and save an updated release checkpoint.
 - [x] Add a responsive wedding countdown card that calculates days remaining from the persisted wedding date.
 - [x] Validate the countdown card at desktop and mobile widths and save an updated release checkpoint.
+- [x] Add a responsive official Cottonwood Barn website button beside the venue information.
+- [x] Validate the venue website button at desktop and mobile widths and save an updated release checkpoint.
