@@ -7,6 +7,10 @@ const dbMocks = vi.hoisted(() => ({
   updatePlannerItem: vi.fn(),
   restoreWeddingPlan: vi.fn(),
   restoreHoneymoonPlan: vi.fn(),
+  createTimelineEvent: vi.fn(),
+  updateTimelineEvent: vi.fn(),
+  deleteTimelineEvent: vi.fn(),
+  moveTimelineEvent: vi.fn(),
 }));
 
 vi.mock("./db", () => dbMocks);
@@ -26,6 +30,7 @@ const plannerState = {
     updatedAt: new Date(),
   },
   items: [],
+  timelineEvents: [],
 };
 
 function createPublicContext(): TrpcContext {
@@ -44,6 +49,10 @@ describe("public private-link planner router", () => {
     dbMocks.updatePlannerItem.mockResolvedValue(plannerState);
     dbMocks.restoreWeddingPlan.mockResolvedValue(plannerState);
     dbMocks.restoreHoneymoonPlan.mockResolvedValue(plannerState);
+    dbMocks.createTimelineEvent.mockResolvedValue(plannerState);
+    dbMocks.updateTimelineEvent.mockResolvedValue(plannerState);
+    dbMocks.deleteTimelineEvent.mockResolvedValue(plannerState);
+    dbMocks.moveTimelineEvent.mockResolvedValue(plannerState);
   });
 
   it("allows the shared planner to load without a signed-in user", async () => {
@@ -75,5 +84,19 @@ describe("public private-link planner router", () => {
     expect(dbMocks.updatePlannerItem).toHaveBeenCalledWith("photographer", 136000, 25000);
     expect(dbMocks.restoreWeddingPlan).toHaveBeenCalledTimes(1);
     expect(dbMocks.restoreHoneymoonPlan).toHaveBeenCalledTimes(1);
+  });
+
+  it("creates, edits, reorders, and deletes timeline events from the shared private link", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    const newEvent = { eventTime: "11:15", title: "Vendor check-in", notes: "Confirm ceremony setup and floral delivery." };
+    const revisedEvent = { id: "timeline-vendor-check", eventTime: "11:30", title: "Vendor check-in", notes: "Confirm ceremony setup, floral delivery, and audio." };
+    await caller.planner.createTimelineEvent(newEvent);
+    await caller.planner.updateTimelineEvent(revisedEvent);
+    await caller.planner.moveTimelineEvent({ id: "timeline-vendor-check", direction: "up" });
+    await caller.planner.deleteTimelineEvent({ id: "timeline-vendor-check" });
+    expect(dbMocks.createTimelineEvent).toHaveBeenCalledWith(newEvent);
+    expect(dbMocks.updateTimelineEvent).toHaveBeenCalledWith(revisedEvent.id, { eventTime: revisedEvent.eventTime, title: revisedEvent.title, notes: revisedEvent.notes });
+    expect(dbMocks.moveTimelineEvent).toHaveBeenCalledWith("timeline-vendor-check", "up");
+    expect(dbMocks.deleteTimelineEvent).toHaveBeenCalledWith("timeline-vendor-check");
   });
 });

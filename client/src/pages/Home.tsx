@@ -1,11 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { daysUntilDate } from "@shared/countdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { CalendarDays, ExternalLink, Landmark, PiggyBank, Plane, RefreshCcw, Sparkles, Users, WalletCards } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarDays, Clock3, ExternalLink, Landmark, Pencil, PiggyBank, Plane, Plus, RefreshCcw, Sparkles, Trash2, Users, WalletCards } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -33,6 +33,19 @@ type TrackerItem = {
   updatedAt: Date;
 };
 
+type TimelineEvent = {
+  id: string;
+  eventTime: string;
+  title: string;
+  notes: string;
+  sortOrder: number;
+  updatedAt: Date;
+};
+
+type TimelineDraft = Pick<TimelineEvent, "eventTime" | "title" | "notes">;
+
+const EMPTY_TIMELINE_DRAFT: TimelineDraft = { eventTime: "12:00", title: "", notes: "" };
+
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#675e54]">{children}</label>;
 }
@@ -53,6 +66,13 @@ export default function Home() {
   const updateItem = trpc.planner.updateItem.useMutation({ onSuccess: async () => utils.planner.get.invalidate(), onError: () => toast.error("Could not save that budget line") });
   const restoreWedding = trpc.planner.restoreWedding.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Wedding tracker restored to the starting plan"); }, onError: () => toast.error("Could not restore the wedding tracker") });
   const restoreHoneymoon = trpc.planner.restoreHoneymoon.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Honeymoon tracker restored to the starting plan"); }, onError: () => toast.error("Could not restore the honeymoon tracker") });
+  const createTimelineEvent = trpc.planner.createTimelineEvent.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Timeline event added"); }, onError: () => toast.error("Could not add that timeline event") });
+  const updateTimelineEvent = trpc.planner.updateTimelineEvent.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Timeline event saved"); }, onError: () => toast.error("Could not save that timeline event") });
+  const deleteTimelineEvent = trpc.planner.deleteTimelineEvent.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Timeline event deleted"); }, onError: () => toast.error("Could not delete that timeline event") });
+  const moveTimelineEvent = trpc.planner.moveTimelineEvent.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); }, onError: () => toast.error("Could not reorder that timeline event") });
+  const [newTimelineEvent, setNewTimelineEvent] = useState<TimelineDraft>(EMPTY_TIMELINE_DRAFT);
+  const [editingTimelineId, setEditingTimelineId] = useState<string | null>(null);
+  const [editingTimelineEvent, setEditingTimelineEvent] = useState<TimelineDraft>(EMPTY_TIMELINE_DRAFT);
 
   const data = plannerQuery.data;
   const calculations = useMemo(() => {
@@ -79,12 +99,24 @@ export default function Home() {
     return <main className="flex min-h-screen items-center justify-center bg-[#f7f3ea]"><div className="rounded-2xl border border-[#e4d8bc] bg-white px-6 py-5 font-serif text-lg text-[#5a2435] shadow-sm">Opening your shared planner…</div></main>;
   }
 
-  const { settings } = data;
+  const { settings, timelineEvents } = data;
   const { weddingItems, honeymoonItems, weddingPlanned, weddingSpent, honeymoonPlanned, honeymoonSpent, rollup, weddingTotal, variance, scenarios, countdownDays } = calculations;
   const perGuest = settings.guestCount ? weddingTotal / settings.guestCount : 0;
   const combinedPerGuest = settings.guestCount ? (weddingTotal + settings.honeymoonBudgetCents) / settings.guestCount : 0;
   const saveSettings = (key: keyof typeof settings, value: number | string) => updateSettings.mutate({ ...settings, [key]: value, venueName: "Cottonwood Barn" });
   const saveItem = (item: typeof data.items[number], key: "plannedCents" | "spentCents", value: number) => updateItem.mutate({ id: item.id, plannedCents: key === "plannedCents" ? value : item.plannedCents, spentCents: key === "spentCents" ? value : item.spentCents });
+  const addTimelineEvent = () => {
+    if (!newTimelineEvent.title.trim()) return toast.error("Add an event title before saving");
+    createTimelineEvent.mutate({ ...newTimelineEvent, title: newTimelineEvent.title.trim(), notes: newTimelineEvent.notes.trim() }, { onSuccess: () => setNewTimelineEvent(EMPTY_TIMELINE_DRAFT) });
+  };
+  const beginTimelineEdit = (event: TimelineEvent) => {
+    setEditingTimelineId(event.id);
+    setEditingTimelineEvent({ eventTime: event.eventTime, title: event.title, notes: event.notes });
+  };
+  const saveTimelineEdit = () => {
+    if (!editingTimelineId || !editingTimelineEvent.title.trim()) return toast.error("Add an event title before saving");
+    updateTimelineEvent.mutate({ id: editingTimelineId, ...editingTimelineEvent, title: editingTimelineEvent.title.trim(), notes: editingTimelineEvent.notes.trim() }, { onSuccess: () => { setEditingTimelineId(null); setEditingTimelineEvent(EMPTY_TIMELINE_DRAFT); } });
+  };
 
   return (
     <div className="min-h-screen bg-[#f7f3ea] text-[#302622]">
@@ -97,7 +129,7 @@ export default function Home() {
 
       <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:grid-cols-[220px_1fr]">
         <aside className="sticky top-0 z-20 border-b border-[#e5dbc6] bg-[#f1eadb]/95 px-3 py-2 backdrop-blur lg:static lg:min-h-[calc(100vh-73px)] lg:border-b-0 lg:border-r lg:px-4 lg:py-6">
-          <nav className="flex snap-x gap-1 overflow-x-auto pb-0.5 lg:sticky lg:top-5 lg:flex-col lg:gap-2"><a href="#overview" className="nav-link snap-start"><WalletCards size={16} />Overview</a><a href="#wedding" className="nav-link snap-start"><Landmark size={16} />Wedding plan</a><a href="#honeymoon" className="nav-link snap-start"><Plane size={16} />Honeymoon</a><a href="#scenarios" className="nav-link snap-start"><Users size={16} />Guest scenarios</a></nav>
+          <nav className="flex snap-x gap-1 overflow-x-auto pb-0.5 lg:sticky lg:top-5 lg:flex-col lg:gap-2"><a href="#overview" className="nav-link snap-start"><WalletCards size={16} />Overview</a><a href="#wedding" className="nav-link snap-start"><Landmark size={16} />Wedding plan</a><a href="#timeline" className="nav-link snap-start"><Clock3 size={16} />Wedding day</a><a href="#honeymoon" className="nav-link snap-start"><Plane size={16} />Honeymoon</a><a href="#scenarios" className="nav-link snap-start"><Users size={16} />Guest scenarios</a></nav>
           <div className="mt-8 hidden rounded-xl border border-[#d6c39a] bg-[#fff9e9] p-4 lg:block"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#80622b]">Venue</p><p className="mt-1 font-serif text-lg font-bold text-[#5a2435]">Cottonwood Barn</p><p className="mt-1 text-sm text-[#675e54]">Paris, Texas<br />July 11, 2027</p><a href="https://cottonwoodbarnvenue.com/" target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-[#b28b46] bg-[#fffdf8] px-2 py-2 text-xs font-bold text-[#6e4b15] transition-colors hover:bg-[#fbf2d7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b7637]">Visit venue website <ExternalLink size={13} /></a></div>
         </aside>
 
@@ -133,6 +165,14 @@ export default function Home() {
 
           <MonogramDivider />
 
+          <section id="timeline" className="scroll-mt-6 space-y-5"><div className="section-title-row"><div><p className="eyebrow">Wedding day</p><h2 className="font-serif text-2xl font-bold text-[#5a2435] sm:text-3xl">Wedding-day timeline</h2><p className="mt-1 text-sm text-[#675e54]">Add, edit, delete, and reorder the moments that will guide your day.</p></div><Badge className="border border-[#d6c39a] bg-[#fff9e9] text-[#725522] hover:bg-[#fff9e9]"><Clock3 className="mr-1.5 h-3.5 w-3.5" />{timelineEvents.length} events</Badge></div>
+            <div className="panel overflow-hidden"><div className="border-b border-[#eadfca] bg-[#fffaf0] p-4 sm:p-5"><div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5a2435] text-[#f7e8bc]"><Plus size={16} /></div><div><p className="font-serif text-lg font-bold text-[#5a2435]">Add an event</p><p className="text-xs text-[#675e54]">Events appear at the end; use the arrows below to set their run-of-show order.</p></div></div><div className="mt-4 grid gap-3 sm:grid-cols-[110px_1fr] lg:grid-cols-[110px_1fr_1.25fr_auto]"><div><FieldLabel>Time</FieldLabel><Input type="time" value={newTimelineEvent.eventTime} onChange={event => setNewTimelineEvent(current => ({ ...current, eventTime: event.target.value }))} className="mt-1.5 h-11 border-[#dccca7] bg-white md:h-10" /></div><div><FieldLabel>Event title</FieldLabel><Input value={newTimelineEvent.title} onChange={event => setNewTimelineEvent(current => ({ ...current, title: event.target.value }))} placeholder="e.g., Vendor check-in" className="mt-1.5 h-11 border-[#dccca7] bg-white md:h-10" /></div><div><FieldLabel>Notes</FieldLabel><Input value={newTimelineEvent.notes} onChange={event => setNewTimelineEvent(current => ({ ...current, notes: event.target.value }))} placeholder="Optional context or owner" className="mt-1.5 h-11 border-[#dccca7] bg-white md:h-10" /></div><Button className="mt-[22px] h-11 bg-[#5a2435] text-[#fff8e8] hover:bg-[#6b2e42] md:h-10" onClick={addTimelineEvent} disabled={createTimelineEvent.isPending}><Plus className="mr-2 h-4 w-4" />Add event</Button></div></div>
+              <div className="divide-y divide-[#eadfca]">{timelineEvents.map((event, index) => editingTimelineId === event.id ? <TimelineEventEditor key={event.id} value={editingTimelineEvent} onChange={setEditingTimelineEvent} onCancel={() => { setEditingTimelineId(null); setEditingTimelineEvent(EMPTY_TIMELINE_DRAFT); }} onSave={saveTimelineEdit} saving={updateTimelineEvent.isPending} /> : <TimelineEventRow key={event.id} event={event} index={index} count={timelineEvents.length} onEdit={() => beginTimelineEdit(event)} onDelete={() => { if (window.confirm(`Delete “${event.title}” from the wedding-day timeline?`)) deleteTimelineEvent.mutate({ id: event.id }); }} onMove={(direction: "up" | "down") => moveTimelineEvent.mutate({ id: event.id, direction })} moving={moveTimelineEvent.isPending} />)}</div>
+            </div>
+          </section>
+
+          <MonogramDivider />
+
           <section id="honeymoon" className="scroll-mt-6 space-y-5"><div className="section-title-row"><div><p className="eyebrow">Honeymoon budget</p><h2 className="font-serif text-2xl font-bold text-[#5a2435] sm:text-3xl">Plan the getaway</h2><p className="mt-1 text-sm text-[#675e54]">Track your six major honeymoon categories in the same shared plan.</p></div><Button variant="outline" className="w-full border-[#819677] bg-[#f6fbf2] text-[#45603b] hover:bg-[#eaf1e5] sm:w-auto" onClick={() => restoreHoneymoon.mutate()} disabled={restoreHoneymoon.isPending}><RefreshCcw className="mr-2 h-4 w-4" />Restore starting plan</Button></div>
             <div className="rounded-xl border border-[#d6ddcf] bg-[#f6fbf2] p-4 sm:flex sm:items-center sm:justify-between"><div><p className="font-serif text-lg font-bold text-[#45603b]">All-inclusive deal-search examples</p><p className="mt-1 text-sm text-[#50604d]">Begin searches with <strong>Dallas/DFW</strong> as your departure area, then compare total cost, flights, transfers, baggage rules, and cancellation terms.</p></div><div className="mt-3 flex flex-wrap gap-2 sm:mt-0"><a className="deal-link" href="https://www.greatvaluevacations.com/" target="_blank" rel="noreferrer">Great Value Vacations <ExternalLink size={14} /></a><a className="deal-link" href="https://www.vacationexpress.com/" target="_blank" rel="noreferrer">Vacation Express <ExternalLink size={14} /></a></div></div>
             <TrackerTable items={honeymoonItems} onSave={saveItem} totalPlanned={honeymoonPlanned} totalSpent={honeymoonSpent} isHoneymoon />
@@ -159,6 +199,15 @@ function TrackerTable({ items, onSave, totalPlanned, totalSpent, isHoneymoon = f
 
 function RollupView({ rows, totalPlanned, totalSpent }: { rows: Array<{ name: string; planned: number; spent: number; remaining: number; share: number }>; totalPlanned: number; totalSpent: number }) {
   return <div className="panel overflow-hidden"><div className="panel-heading"><div><p className="eyebrow">Live rollup</p><h3 className="font-serif text-2xl font-bold text-[#5a2435]">Major categories</h3></div><p className="text-sm text-[#675e54]">Driven by the detailed tracker</p></div><div className="space-y-2 p-3 md:hidden">{rows.map(row => <article className="rounded-lg border border-[#ece2d0] bg-[#fffdf8] p-3" key={row.name}><div className="flex justify-between gap-3"><strong className="text-sm text-[#4b2632]">{row.name}</strong><span className="shrink-0 text-sm font-bold text-[#6e4b15]">{(row.share * 100).toFixed(1)}%</span></div><div className="mt-2 grid grid-cols-3 gap-2 text-xs"><div><p className="text-[#675e54]">Planned</p><strong>{toCurrency(row.planned)}</strong></div><div><p className="text-[#675e54]">Spent</p><strong>{toCurrency(row.spent)}</strong></div><div><p className="text-[#675e54]">Remaining</p><strong>{toCurrency(row.remaining)}</strong></div></div></article>)}<div className="rounded-lg bg-[#f8f0df] p-3 text-sm font-bold text-[#5a2435]">Total planned: {toCurrency(totalPlanned)} · Total spent: {toCurrency(totalSpent)}</div></div><div className="hidden overflow-x-auto md:block"><table className="budget-table min-w-[740px]"><thead><tr><th>Major category</th><th>Planned</th><th>Spent</th><th>Remaining</th><th>Share</th></tr></thead><tbody>{rows.map(row => <tr key={row.name}><td className="font-semibold text-[#4b2632]">{row.name}</td><td>{toCurrency(row.planned)}</td><td>{toCurrency(row.spent)}</td><td>{toCurrency(row.remaining)}</td><td>{(row.share * 100).toFixed(1)}%</td></tr>)}</tbody><tfoot><tr><td>Total</td><td>{toCurrency(totalPlanned)}</td><td>{toCurrency(totalSpent)}</td><td>{toCurrency(totalPlanned - totalSpent)}</td><td>100.0%</td></tr></tfoot></table></div></div>;
+}
+
+function TimelineEventRow({ event, index, count, onEdit, onDelete, onMove, moving }: { event: TimelineEvent; index: number; count: number; onEdit: () => void; onDelete: () => void; onMove: (direction: "up" | "down") => void; moving: boolean }) {
+  const eventTime = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(`1970-01-01T${event.eventTime}:00`));
+  return <article className="group grid gap-3 p-4 sm:grid-cols-[95px_1fr_auto] sm:items-center sm:px-5"><div className="flex items-center gap-2 text-[#6e4b15]"><div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e4cf97] bg-[#fff5da]"><Clock3 size={15} /></div><time className="font-serif text-base font-bold">{eventTime}</time></div><div className="min-w-0"><h3 className="font-serif text-lg font-bold text-[#4b2632]">{event.title}</h3>{event.notes && <p className="mt-0.5 text-sm leading-5 text-[#675e54]">{event.notes}</p>}</div><div className="flex flex-wrap gap-1.5 sm:justify-end"><Button variant="outline" size="icon" className="h-10 w-10 border-[#d6c39a] bg-[#fffdf8] text-[#6e4b15] hover:bg-[#fbf2d7]" aria-label={`Move ${event.title} earlier`} disabled={index === 0 || moving} onClick={() => onMove("up")}><ArrowUp size={16} /></Button><Button variant="outline" size="icon" className="h-10 w-10 border-[#d6c39a] bg-[#fffdf8] text-[#6e4b15] hover:bg-[#fbf2d7]" aria-label={`Move ${event.title} later`} disabled={index === count - 1 || moving} onClick={() => onMove("down")}><ArrowDown size={16} /></Button><Button variant="outline" size="icon" className="h-10 w-10 border-[#d6c39a] bg-[#fffdf8] text-[#6e4b15] hover:bg-[#fbf2d7]" aria-label={`Edit ${event.title}`} onClick={onEdit}><Pencil size={15} /></Button><Button variant="outline" size="icon" className="h-10 w-10 border-[#e2b7bc] bg-[#fffafa] text-[#8a2633] hover:bg-[#fff0f1]" aria-label={`Delete ${event.title}`} onClick={onDelete}><Trash2 size={15} /></Button></div></article>;
+}
+
+function TimelineEventEditor({ value, onChange, onCancel, onSave, saving }: { value: TimelineDraft; onChange: (value: TimelineDraft) => void; onCancel: () => void; onSave: () => void; saving: boolean }) {
+  return <article className="bg-[#fffaf0] p-4 sm:px-5"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#80622b]">Editing timeline event</p><div className="mt-3 grid gap-3 sm:grid-cols-[110px_1fr] lg:grid-cols-[110px_1fr_1.25fr_auto]"><div><FieldLabel>Time</FieldLabel><Input type="time" value={value.eventTime} onChange={event => onChange({ ...value, eventTime: event.target.value })} className="mt-1.5 h-11 border-[#dccca7] bg-white md:h-10" /></div><div><FieldLabel>Event title</FieldLabel><Input value={value.title} onChange={event => onChange({ ...value, title: event.target.value })} className="mt-1.5 h-11 border-[#dccca7] bg-white md:h-10" /></div><div><FieldLabel>Notes</FieldLabel><Input value={value.notes} onChange={event => onChange({ ...value, notes: event.target.value })} className="mt-1.5 h-11 border-[#dccca7] bg-white md:h-10" /></div><div className="mt-[22px] flex gap-2"><Button className="h-11 bg-[#5a2435] text-[#fff8e8] hover:bg-[#6b2e42] md:h-10" onClick={onSave} disabled={saving}>Save</Button><Button variant="outline" className="h-11 border-[#d6c39a] bg-white text-[#6e4b15] hover:bg-[#fbf2d7] md:h-10" onClick={onCancel}>Cancel</Button></div></div></article>;
 }
 
 function WeddingMonogram() {

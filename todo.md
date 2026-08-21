@@ -25,3 +25,8 @@
 - [x] Validate the countdown card at desktop and mobile widths and save an updated release checkpoint.
 - [x] Add a responsive official Cottonwood Barn website button beside the venue information.
 - [x] Validate the venue website button at desktop and mobile widths and save an updated release checkpoint.
+- [x] Add a persisted wedding-day timeline event model with title, time, notes, and explicit sort order.
+- [x] Add create, edit, delete, and move-up/move-down event controls to the shared planner.
+- [x] Add a responsive wedding-day timeline view with starter events and editable event fields.
+- [x] Add automated tests for timeline creation, updates, deletion, and reordering.
+- [x] Validate desktop and mobile timeline behavior and save an updated release checkpoint.

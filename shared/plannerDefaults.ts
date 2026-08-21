@@ -10,6 +10,14 @@ export type StarterPlannerItem = {
   sortOrder: number;
 };
 
+export type StarterTimelineEvent = {
+  id: string;
+  eventTime: string;
+  title: string;
+  notes: string;
+  sortOrder: number;
+};
+
 export const STARTER_SETTINGS = {
   weddingDate: "2027-07-11",
   guestCount: 125,
@@ -54,3 +62,14 @@ export const HONEYMOON_STARTER_ITEMS: StarterPlannerItem[] = [
 ];
 
 export const ALL_STARTER_ITEMS = [...WEDDING_STARTER_ITEMS, ...HONEYMOON_STARTER_ITEMS];
+
+export const TIMELINE_STARTER_EVENTS: StarterTimelineEvent[] = [
+  { id: "timeline-getting-ready", eventTime: "10:00", title: "Getting Ready", notes: "Hair, makeup, attire, and final details.", sortOrder: 1 },
+  { id: "timeline-first-look", eventTime: "14:30", title: "First Look & Portraits", notes: "Private first look followed by wedding-party and family portraits.", sortOrder: 2 },
+  { id: "timeline-guests-arrive", eventTime: "16:30", title: "Guests Arrive", notes: "Welcome guests and open the seating area.", sortOrder: 3 },
+  { id: "timeline-ceremony", eventTime: "17:00", title: "Ceremony", notes: "Begin the ceremony at Cottonwood Barn.", sortOrder: 4 },
+  { id: "timeline-cocktail-hour", eventTime: "17:30", title: "Cocktail Hour", notes: "Refreshments, guest photos, and couple portraits.", sortOrder: 5 },
+  { id: "timeline-dinner", eventTime: "18:30", title: "Dinner & Toasts", notes: "Dinner service, welcome remarks, and toasts.", sortOrder: 6 },
+  { id: "timeline-dancing", eventTime: "20:00", title: "First Dance & Open Dancing", notes: "First dance followed by the reception dance floor.", sortOrder: 7 },
+  { id: "timeline-grand-exit", eventTime: "22:30", title: "Grand Exit", notes: "Gather guests for the final send-off.", sortOrder: 8 },
+];

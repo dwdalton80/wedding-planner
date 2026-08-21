@@ -3,7 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { getPlannerState, restoreHoneymoonPlan, restoreWeddingPlan, updatePlannerItem, updatePlannerSettings } from "./db";
+import { createTimelineEvent, deleteTimelineEvent, getPlannerState, moveTimelineEvent, restoreHoneymoonPlan, restoreWeddingPlan, updatePlannerItem, updatePlannerSettings, updateTimelineEvent } from "./db";
 
 const settingsInput = z.object({
   weddingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -13,6 +13,12 @@ const settingsInput = z.object({
   venueCostPaidCents: z.number().int().min(0),
   venueName: z.literal("Cottonwood Barn"),
   venueCapacity: z.number().int().min(1).max(1000),
+});
+
+const timelineEventInput = z.object({
+  eventTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  title: z.string().trim().min(1).max(128),
+  notes: z.string().trim().max(500),
 });
 
 export const appRouter = router({
@@ -30,6 +36,13 @@ export const appRouter = router({
     updateItem: publicProcedure.input(z.object({ id: z.string().min(1).max(64), plannedCents: z.number().int().min(0), spentCents: z.number().int().min(0) })).mutation(({ input }) => updatePlannerItem(input.id, input.plannedCents, input.spentCents)),
     restoreWedding: publicProcedure.mutation(() => restoreWeddingPlan()),
     restoreHoneymoon: publicProcedure.mutation(() => restoreHoneymoonPlan()),
+    createTimelineEvent: publicProcedure.input(timelineEventInput).mutation(({ input }) => createTimelineEvent(input)),
+    updateTimelineEvent: publicProcedure.input(timelineEventInput.extend({ id: z.string().min(1).max(64) })).mutation(({ input }) => {
+      const { id, ...event } = input;
+      return updateTimelineEvent(id, event);
+    }),
+    deleteTimelineEvent: publicProcedure.input(z.object({ id: z.string().min(1).max(64) })).mutation(({ input }) => deleteTimelineEvent(input.id)),
+    moveTimelineEvent: publicProcedure.input(z.object({ id: z.string().min(1).max(64), direction: z.enum(["up", "down"]) })).mutation(({ input }) => moveTimelineEvent(input.id, input.direction)),
   }),
 });
 

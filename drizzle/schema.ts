@@ -35,7 +35,17 @@ export const plannerItems = mysqlTable("planner_items", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const plannerTimelineEvents = mysqlTable("planner_timeline_events", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  eventTime: varchar("eventTime", { length: 5 }).notNull(),
+  title: varchar("title", { length: 128 }).notNull(),
+  notes: text("notes").notNull(),
+  sortOrder: int("sortOrder").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type PlannerSettings = typeof plannerSettings.$inferSelect;
 export type PlannerItem = typeof plannerItems.$inferSelect;
+export type PlannerTimelineEvent = typeof plannerTimelineEvents.$inferSelect;

@@ -1,7 +1,8 @@
 import { asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { ALL_STARTER_ITEMS, HONEYMOON_STARTER_ITEMS, STARTER_SETTINGS, WEDDING_STARTER_ITEMS } from "../shared/plannerDefaults";
-import { InsertUser, plannerItems, plannerSettings, users } from "../drizzle/schema";
+import { nanoid } from "nanoid";
+import { ALL_STARTER_ITEMS, HONEYMOON_STARTER_ITEMS, STARTER_SETTINGS, TIMELINE_STARTER_EVENTS, WEDDING_STARTER_ITEMS } from "../shared/plannerDefaults";
+import { InsertUser, plannerItems, plannerSettings, plannerTimelineEvents, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -95,7 +96,12 @@ export async function getPlannerState() {
     await db.insert(plannerItems).values(ALL_STARTER_ITEMS);
     items = await db.select().from(plannerItems).orderBy(asc(plannerItems.tracker), asc(plannerItems.sortOrder));
   }
-  return { settings, items };
+  let timelineEvents = await db.select().from(plannerTimelineEvents).orderBy(asc(plannerTimelineEvents.sortOrder));
+  if (timelineEvents.length === 0) {
+    await db.insert(plannerTimelineEvents).values(TIMELINE_STARTER_EVENTS);
+    timelineEvents = await db.select().from(plannerTimelineEvents).orderBy(asc(plannerTimelineEvents.sortOrder));
+  }
+  return { settings, items, timelineEvents };
 }
 
 export async function updatePlannerSettings(input: typeof STARTER_SETTINGS) {
@@ -123,3 +129,41 @@ async function restoreItems(items: Record<string, number>) {
 
 export async function restoreWeddingPlan() { return restoreItems(WEDDING_RESTORE_VALUES); }
 export async function restoreHoneymoonPlan() { return restoreItems(HONEYMOON_RESTORE_VALUES); }
+
+type TimelineEventInput = { eventTime: string; title: string; notes: string };
+
+export async function createTimelineEvent(input: TimelineEventInput) {
+  const db = await requirePlannerDb();
+  const state = await getPlannerState();
+  const sortOrder = state.timelineEvents.length ? Math.max(...state.timelineEvents.map(event => event.sortOrder)) + 1 : 1;
+  await db.insert(plannerTimelineEvents).values({ id: `timeline-${nanoid(10)}`, ...input, sortOrder });
+  return getPlannerState();
+}
+
+export async function updateTimelineEvent(id: string, input: TimelineEventInput) {
+  const db = await requirePlannerDb();
+  await getPlannerState();
+  await db.update(plannerTimelineEvents).set(input).where(eq(plannerTimelineEvents.id, id));
+  return getPlannerState();
+}
+
+export async function deleteTimelineEvent(id: string) {
+  const db = await requirePlannerDb();
+  await getPlannerState();
+  await db.delete(plannerTimelineEvents).where(eq(plannerTimelineEvents.id, id));
+  return getPlannerState();
+}
+
+export async function moveTimelineEvent(id: string, direction: "up" | "down") {
+  const db = await requirePlannerDb();
+  const state = await getPlannerState();
+  const currentIndex = state.timelineEvents.findIndex(event => event.id === id);
+  if (currentIndex < 0) throw new Error("Timeline event not found");
+  const targetIndex = currentIndex + (direction === "up" ? -1 : 1);
+  if (targetIndex < 0 || targetIndex >= state.timelineEvents.length) return state;
+  const current = state.timelineEvents[currentIndex]!;
+  const target = state.timelineEvents[targetIndex]!;
+  await db.update(plannerTimelineEvents).set({ sortOrder: target.sortOrder }).where(eq(plannerTimelineEvents.id, current.id));
+  await db.update(plannerTimelineEvents).set({ sortOrder: current.sortOrder }).where(eq(plannerTimelineEvents.id, target.id));
+  return getPlannerState();
+}

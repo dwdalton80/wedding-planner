@@ -15,6 +15,13 @@
       "when": 1787266596957,
       "tag": "0001_abnormal_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787273344568,
+      "tag": "0002_living_warhawk",
+      "breakpoints": true
     }
   ]
 }
