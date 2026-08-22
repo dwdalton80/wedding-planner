@@ -48,6 +48,8 @@ pnpm verify:migrations
 
 The script derives a timestamped temporary database name from `DATABASE_URL`, applies the committed Drizzle migrations to that empty database through `MIGRATION_DATABASE_URL`, verifies the expected planner tables, and drops the temporary database in a cleanup block. It never writes to the database named in `DATABASE_URL`. The current managed runtime’s application credential is intentionally restricted and cannot create temporary databases, so this separate migration credential is required for a successful isolated verification there.
 
+**Handoff status:** the repository includes the isolated verification command, but this environment could not complete it because no valid DDL-capable migration credential was provided. The destination owner must run `pnpm verify:migrations` with a reachable `MIGRATION_DATABASE_URL` before a production migration or ownership cutover.
+
 ## Backup and Restore
 
 ### Backup
