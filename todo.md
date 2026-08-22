@@ -35,7 +35,7 @@
 - [x] Add repository health files, safe environment examples, and GitHub workflow guidance suitable for a portable handoff.
 - [x] Validate documented setup, test, build, database-migration, and production-deployment commands.
 - [x] Commit and push the complete codebase and handoff package to the selected GitHub repository.
-- [ ] Save an updated planner checkpoint and deliver the GitHub handoff summary.
+- [x] Save an updated planner checkpoint and deliver the GitHub handoff summary.
 - [x] Move deprecated package-level pnpm patch and override settings to the supported workspace configuration, then rerun handoff validation.
 - [ ] Validate the database migration command against an isolated temporary database and document the result.
 - [x] Validate the built production startup command and confirm the planner responds successfully before GitHub release.
