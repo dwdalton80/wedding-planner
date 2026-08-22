@@ -24,6 +24,8 @@ NODE_ENV=production pnpm start
 
 The production build writes a Vite client bundle and an esbuild server bundle to `dist/`. The process serves the built client and tRPC API from the same Express server.
 
+**Latest handoff validation:** the built server was started with `PORT=3017 NODE_ENV=production pnpm start`; a same-origin `planner.get` tRPC response returned live settings, planner items, and `timelineEvents`. This confirms the production bundle can reach the configured planner database. Repeat this smoke test in every destination environment after credentials and migrations are applied.
+
 ## Database Migration Procedure
 
 1. Pull the target branch and confirm the intended `drizzle/` migration files are present.
