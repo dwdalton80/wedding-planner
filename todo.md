@@ -30,3 +30,12 @@
 - [x] Add a responsive wedding-day timeline view with starter events and editable event fields.
 - [x] Add automated tests for timeline creation, updates, deletion, and reordering.
 - [x] Validate desktop and mobile timeline behavior and save an updated release checkpoint.
+- [x] Audit the live project, its deployment dependencies, and the selected GitHub repository for handoff readiness.
+- [x] Create a professional README, architecture overview, operations runbook, data dictionary, environment-variable guide, and migration checklist.
+- [x] Add repository health files, safe environment examples, and GitHub workflow guidance suitable for a portable handoff.
+- [x] Validate documented setup, test, build, database-migration, and production-deployment commands.
+- [ ] Commit and push the complete codebase and handoff package to the selected GitHub repository.
+- [ ] Save an updated planner checkpoint and deliver the GitHub handoff summary.
+- [x] Move deprecated package-level pnpm patch and override settings to the supported workspace configuration, then rerun handoff validation.
+- [ ] Validate the database migration command against an isolated temporary database and document the result.
+- [ ] Validate the built production startup command and confirm the planner responds successfully before GitHub release.
