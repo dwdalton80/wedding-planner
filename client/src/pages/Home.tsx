@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { usePlannerStore } from "@/hooks/usePlannerStore";
 import { daysUntilDate } from "@shared/countdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,16 +60,7 @@ function MoneyInput({ cents, onSave, ariaLabel }: { cents: number; onSave: (valu
 }
 
 export default function Home() {
-  const plannerQuery = trpc.planner.get.useQuery(undefined, { refetchOnWindowFocus: false });
-  const utils = trpc.useUtils();
-  const updateSettings = trpc.planner.updateSettings.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Plan inputs saved"); }, onError: () => toast.error("Could not save those inputs") });
-  const updateItem = trpc.planner.updateItem.useMutation({ onSuccess: async () => utils.planner.get.invalidate(), onError: () => toast.error("Could not save that budget line") });
-  const restoreWedding = trpc.planner.restoreWedding.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Wedding tracker restored to the starting plan"); }, onError: () => toast.error("Could not restore the wedding tracker") });
-  const restoreHoneymoon = trpc.planner.restoreHoneymoon.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Honeymoon tracker restored to the starting plan"); }, onError: () => toast.error("Could not restore the honeymoon tracker") });
-  const createTimelineEvent = trpc.planner.createTimelineEvent.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Timeline event added"); }, onError: () => toast.error("Could not add that timeline event") });
-  const updateTimelineEvent = trpc.planner.updateTimelineEvent.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Timeline event saved"); }, onError: () => toast.error("Could not save that timeline event") });
-  const deleteTimelineEvent = trpc.planner.deleteTimelineEvent.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); toast.success("Timeline event deleted"); }, onError: () => toast.error("Could not delete that timeline event") });
-  const moveTimelineEvent = trpc.planner.moveTimelineEvent.useMutation({ onSuccess: async () => { await utils.planner.get.invalidate(); }, onError: () => toast.error("Could not reorder that timeline event") });
+  const { isLocal, plannerQuery, updateSettings, updateItem, restoreWedding, restoreHoneymoon, createTimelineEvent, updateTimelineEvent, deleteTimelineEvent, moveTimelineEvent } = usePlannerStore();
   const [newTimelineEvent, setNewTimelineEvent] = useState<TimelineDraft>(EMPTY_TIMELINE_DRAFT);
   const [editingTimelineId, setEditingTimelineId] = useState<string | null>(null);
   const [editingTimelineEvent, setEditingTimelineEvent] = useState<TimelineDraft>(EMPTY_TIMELINE_DRAFT);
@@ -123,7 +114,7 @@ export default function Home() {
       <header className="border-b border-[#e5dbc6] bg-[#fffdf8] px-3 py-3 sm:px-4 sm:py-4 lg:px-8">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4">
           <div className="flex items-center gap-2.5 sm:gap-3"><WeddingMonogram /><div><p className="hidden text-[10px] font-bold uppercase tracking-[0.18em] text-[#8b745b] sm:block">Shared celebration plan</p><h1 className="font-serif text-xl font-bold tracking-tight text-[#5a2435] sm:text-2xl">Kyia + Keilen</h1></div></div>
-          <Badge className="shrink-0 border border-[#cbb47a] bg-[#fbf2d7] px-2.5 py-1.5 text-xs text-[#725522] hover:bg-[#fbf2d7] sm:px-3"><Sparkles className="mr-1 h-3.5 w-3.5 sm:mr-1.5" /><span className="hidden sm:inline">Private link planner</span><span className="sm:hidden">Planner</span></Badge>
+          <Badge className="shrink-0 border border-[#cbb47a] bg-[#fbf2d7] px-2.5 py-1.5 text-xs text-[#725522] hover:bg-[#fbf2d7] sm:px-3"><Sparkles className="mr-1 h-3.5 w-3.5 sm:mr-1.5" /><span className="hidden sm:inline">{isLocal ? "Saved on this device" : "Private link planner"}</span><span className="sm:hidden">Planner</span></Badge>
         </div>
       </header>
 
@@ -135,7 +126,7 @@ export default function Home() {
 
         <main className="min-w-0 space-y-6 px-3 py-4 sm:space-y-7 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
           <section id="overview" className="scroll-mt-6">
-            <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><p className="eyebrow">Wedding planner</p><h2 className="font-serif text-2xl font-bold text-[#5a2435] sm:text-3xl">Your plan at a glance</h2><p className="mt-1 text-sm text-[#675e54]">Every figure below is saved to your shared planner.</p></div><div className="flex flex-col gap-2 sm:items-end"><CountdownCard days={countdownDays} weddingDate={settings.weddingDate} /><div className="rounded-lg border border-[#d9c69b] bg-[#fffaf0] px-3 py-2 text-sm text-[#5f513d]"><strong>{settings.guestCount}</strong> guests • {settings.venueCapacity} venue capacity</div></div></div>
+            <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><p className="eyebrow">Wedding planner</p><h2 className="font-serif text-2xl font-bold text-[#5a2435] sm:text-3xl">Your plan at a glance</h2><p className="mt-1 text-sm text-[#675e54]">{isLocal ? "Every figure below is saved in this browser on this device." : "Every figure below is saved to your shared planner."}</p></div><div className="flex flex-col gap-2 sm:items-end"><CountdownCard days={countdownDays} weddingDate={settings.weddingDate} /><div className="rounded-lg border border-[#d9c69b] bg-[#fffaf0] px-3 py-2 text-sm text-[#5f513d]"><strong>{settings.guestCount}</strong> guests • {settings.venueCapacity} venue capacity</div></div></div>
             <div className="mb-4 rounded-xl border border-[#d6c39a] bg-[#fff9e9] p-3 lg:hidden"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#80622b]">Venue</p><div className="mt-1 flex items-center justify-between gap-3"><div><p className="font-serif text-lg font-bold text-[#5a2435]">Cottonwood Barn</p><p className="mt-1 text-sm text-[#675e54]">Paris, Texas · July 11, 2027</p></div><a href="https://cottonwoodbarnvenue.com/" target="_blank" rel="noreferrer" aria-label="Visit Cottonwood Barn website" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#b28b46] bg-[#fffdf8] text-[#6e4b15] transition-colors hover:bg-[#fbf2d7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b7637]"><ExternalLink size={16} /></a></div></div>
 
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -182,7 +173,7 @@ export default function Home() {
 
           <section id="scenarios" className="panel scroll-mt-6"><div className="panel-heading"><div><p className="eyebrow">Guest analysis</p><h2 className="font-serif text-2xl font-bold text-[#5a2435] sm:text-3xl">Guest count vs. per-person cost</h2><p className="mt-1 text-sm text-[#675e54]">Wedding-only costs exclude the honeymoon. The combined series includes the honeymoon budget.</p></div></div><div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]"><div className="md:hidden space-y-2 p-3">{scenarios.map(row => <article className={`rounded-lg border p-3 ${row.guests === settings.guestCount ? "border-[#d2ad58] bg-[#fff2cf]" : "border-[#e8decd] bg-[#fffdf8]"}`} key={row.guests}><div className="flex items-center justify-between"><strong className="text-[#5a2435]">{row.guests} guests</strong>{row.guests === settings.guestCount && <span className="rounded-full bg-[#f1dfaf] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#6e4b15]">Current plan</span>}</div><div className="mt-2 grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs text-[#675e54]">Wedding</p><strong>{currency.format(row.wedding)}</strong></div><div><p className="text-xs text-[#675e54]">Wedding + honeymoon</p><strong>{currency.format(row.combined)}</strong></div></div></article>)}</div><div className="hidden overflow-x-auto md:block"><table className="budget-table min-w-[450px]"><thead><tr><th>Guest count</th><th>Wedding / guest</th><th>Wedding + honeymoon / guest</th></tr></thead><tbody>{scenarios.map(row => <tr className={row.guests === settings.guestCount ? "current-scenario" : ""} key={row.guests}><td>{row.guests}{row.guests === settings.guestCount && <span className="ml-2 text-xs font-bold text-[#6e4b15]">Current plan</span>}</td><td>{currency.format(row.wedding)}</td><td>{currency.format(row.combined)}</td></tr>)}</tbody></table></div><div className="h-[230px] min-w-0 px-3 pb-3 sm:h-[285px] sm:px-0 sm:pb-0"><ResponsiveContainer width="100%" height="100%"><LineChart data={scenarios} margin={{ top: 10, right: 6, left: -10, bottom: 6 }}><CartesianGrid stroke="#e5dbc6" strokeDasharray="4 4" /><XAxis dataKey="guests" tickLine={false} axisLine={false} tick={{ fill: "#675e54", fontSize: 12 }} /><YAxis tickFormatter={value => `$${value}`} tickLine={false} axisLine={false} tick={{ fill: "#675e54", fontSize: 11 }} /><Tooltip formatter={(value: number) => currency.format(value)} labelFormatter={label => `${label} guests`} contentStyle={{ borderRadius: 12, borderColor: "#d8c7a3", backgroundColor: "#fffdf8" }} /><Line dataKey="wedding" name="Wedding only" stroke="#6e8a61" strokeWidth={3} dot={{ r: 4, fill: "#6e8a61" }} activeDot={{ r: 6 }} /><Line dataKey="combined" name="Wedding + honeymoon" stroke="#9b7637" strokeWidth={3} dot={{ r: 4, fill: "#9b7637" }} activeDot={{ r: 6 }} /></LineChart></ResponsiveContainer></div></div></section>
 
-          <footer className="pb-3 text-center text-xs text-[#796f63]">A shared private-link planner for Kyia + Keilen. Changes save to the shared plan.</footer>
+          <footer className="pb-3 text-center text-xs text-[#796f63]">{isLocal ? "Kyia + Keilen’s planner. Changes stay in this browser on this device." : "A shared private-link planner for Kyia + Keilen. Changes save to the shared plan."}</footer>
         </main>
       </div>
     </div>

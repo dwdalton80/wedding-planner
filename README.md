@@ -52,6 +52,7 @@ The development server selects an available port beginning with `PORT` or `3000`
 |---|---|
 | `pnpm dev` | Run the Express server and Vite development middleware. |
 | `pnpm build` | Build the client and production server bundle into `dist/`. |
+| `pnpm build:pages` | Build a static GitHub Pages version into `dist/public/`. |
 | `pnpm start` | Run the built production server. |
 | `pnpm test` | Run all server and shared Vitest tests. |
 | `pnpm check` | Run TypeScript without emitting files. |
@@ -60,6 +61,14 @@ The development server selects an available port beginning with `PORT` or `3000`
 | `pnpm drizzle-kit migrate` | Apply committed Drizzle migrations to `DATABASE_URL`. |
 
 Do not run schema generation against a production database until the generated SQL has been reviewed. The detailed database workflow is documented in [Maintenance conventions](docs/MAINTENANCE.md).
+
+## GitHub Pages Deployment
+
+The repository includes `.github/workflows/deploy-pages.yml`. Each push to `main` tests, type-checks, builds, and publishes the site to `https://dwdalton80.github.io/wedding-planner/`.
+
+GitHub Pages is static hosting and cannot run this repository's Express API or MySQL database. The Pages build therefore uses browser storage: edits persist on the current browser and device and sync across tabs, but they are not shared between people or devices. The regular `pnpm dev`, `pnpm build`, and `pnpm start` commands continue to use the shared server/database mode.
+
+To enable the first deployment, open the repository's **Settings → Pages**, set **Source** to **GitHub Actions**, and run the **Deploy to GitHub Pages** workflow if it did not start automatically.
 
 ## Repository Layout
 
